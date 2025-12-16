@@ -3,12 +3,32 @@ from django.db import models
 from conduit.apps.core.models import TimestampedModel
 
 
+class ArticleManager(models.Manager):
+    def filter_by_params(self, author=None, tag=None, favorited=None):
+        queryset = self.get_queryset().select_related('author', 'author__user')
+
+        if author is not None:
+            queryset = queryset.filter(author__user__username=author)
+
+        if tag is not None:
+            queryset = queryset.filter(tags__tag=tag)
+
+        if favorited is not None:
+            queryset = queryset.filter(
+                favorited_by__user__username=favorited
+            )
+
+        return queryset
+
+
 class Article(TimestampedModel):
     slug = models.SlugField(db_index=True, max_length=255, unique=True)
     title = models.CharField(db_index=True, max_length=255)
 
     description = models.TextField()
     body = models.TextField()
+
+    objects = ArticleManager()
 
     # Every article must have an author. This will answer questions like "Who
     # gets credit for writing this article?" and "Who can edit this article?".
